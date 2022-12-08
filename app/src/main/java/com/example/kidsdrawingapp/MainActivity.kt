@@ -1,13 +1,15 @@
 package com.example.kidsdrawingapp
 
+import android.Manifest
 import android.app.Dialog
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Toast
+import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.get
 
@@ -15,6 +17,17 @@ class MainActivity : AppCompatActivity() {
 
     private var drawingView: DrawingView? = null
     private var mImageButtonCurrentPaint: ImageButton? = null
+
+    private val storageResultLauncher: ActivityResultLauncher<String> =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()) {
+            isGranted ->
+            if(isGranted) {
+                Toast.makeText(this, "Permission is granted", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         drawingView?.setSizeForBrush(20.toFloat())
 
         val linearLayoutPaintColors = findViewById<LinearLayout>(R.id.ll_paint_colors)
+        val ibFolder: ImageButton = findViewById(R.id.ib_folder)
 
         mImageButtonCurrentPaint = linearLayoutPaintColors[1] as ImageButton
         mImageButtonCurrentPaint!!.setImageDrawable(
@@ -33,6 +47,19 @@ class MainActivity : AppCompatActivity() {
         val ibBrushImage: ImageView = findViewById(R.id.ib_brush_image)
         ibBrushImage.setOnClickListener{
             showBrushSizeChooserDialog()
+        }
+
+
+        ibFolder.setOnClickListener {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                    shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                showRationaleDialog(
+                    "Kids Drawing app require Storage access",
+                    "Storage access can not be used because it was denied"
+                )
+            } else {
+                storageResultLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
 
     }
@@ -77,5 +104,15 @@ class MainActivity : AppCompatActivity() {
 
             mImageButtonCurrentPaint = view
         }
+    }
+
+    private fun showRationaleDialog(title: String, message: String) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+        builder.setMessage(message)
+        builder.setPositiveButton("Cancel"){dialog, _->
+            dialog.dismiss()
+        }
+        builder.create().show()
     }
 }
